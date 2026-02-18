@@ -1,0 +1,40 @@
+---
+import '../styles/globals.css'
+
+interface Props {
+  title?: string
+  description?: string
+}
+
+const {
+  title = 'Hexi — A Hexagonal Runtime Framework for Building Coding Agents',
+  description = 'Contracts-first ports and adapters for building provider-agnostic, composable agent runtimes.',
+} = Astro.props
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="keywords" content="Hexi, coding agents, hexagonal architecture, runtime framework, ports and adapters" />
+    <meta name="author" content="Hexi" />
+    <meta property="og:title" content="Hexi — Hexagonal Runtime Framework" />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Hexi — Hexagonal Runtime Framework" />
+    <meta name="twitter:description" content={description} />
+    <script is:inline>
+      const storedTheme = localStorage.getItem('hexi-theme')
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      const dark = storedTheme ? storedTheme === 'dark' : prefersDark
+      document.documentElement.classList.toggle('dark', dark)
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.astro/
+build/
+
+# Coverage and test artifacts
+coverage/
+
+# Logs
+*.log
+dev.log
+server.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# TypeScript
+*.tsbuildinfo
+
+# Package manager and tool caches
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Local editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local project-specific files
+local-*
+.claude
+.z-ai-config
+test
+prompt
+
+# Secrets / keys
+*.pem
+
+# Optional deployment/platform dirs
+.vercel
+
+# Skills directory
+skills/

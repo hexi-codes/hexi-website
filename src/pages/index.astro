@@ -1,0 +1,629 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import Prism from 'prismjs'
+import 'prismjs/components/prism-python'
+
+const features = [
+  {
+    icon: 'stack',
+    title: 'Contracts-First Architecture',
+    description: 'Stable ports define provider, tool, storage, and interface boundaries.',
+  },
+  {
+    icon: 'plug',
+    title: 'Replaceable Adapters',
+    description: 'Swap providers or integrations without modifying core runtime logic.',
+  },
+  {
+    icon: 'box',
+    title: 'Provider-Agnostic by Design',
+    description: 'OpenAI/Anthropic-style APIs first. Additional adapters can evolve independently.',
+  },
+  {
+    icon: 'terminal',
+    title: 'CLI-First, Minimal Core',
+    description: 'No required dashboards. No hidden services. Local runtime.',
+  },
+  {
+    icon: 'flow',
+    title: 'Event-Driven Thread Model',
+    description: 'Inbox-style task orchestration built on explicit events.',
+    planned: true,
+  },
+  {
+    icon: 'radio',
+    title: 'MCP-Ready Direction',
+    description: 'Designed to support remote steering and distributed control planes.',
+    planned: true,
+  },
+]
+
+const iconSvgs = {
+  stack: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 8 4-8 4-8-4 8-4Z"/><path d="m4 12 8 4 8-4"/><path d="m4 17 8 4 8-4"/></svg>',
+  plug: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 7v4"/><path d="M16 7v4"/><path d="M7 11h10v2a5 5 0 0 1-5 5 5 5 0 0 1-5-5v-2Z"/><path d="M12 18v3"/></svg>',
+  box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m12 12 8-4.5"/><path d="m12 12-8-4.5"/><path d="M12 12v9"/></svg>',
+  terminal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M13 15h4"/></svg>',
+  flow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M8 6h8"/><path d="M7.4 7.5 11 16"/><path d="m16.6 7.5-3.6 8.5"/></svg>',
+  radio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 11a8 8 0 0 1 16 0"/><path d="M7 11a5 5 0 0 1 10 0"/><circle cx="12" cy="11" r="1.5"/><rect x="4" y="14" width="16" height="6" rx="2"/></svg>',
+}
+
+const codeExamples = [
+  {
+    title: 'Embedded Single Step',
+    source: 'examples/embedded_step/run_embedded.py',
+    code: `from pathlib import Path
+from hexi.adapters.events_console import ConsoleEventSink
+from hexi.adapters.exec_local import LocalExec
+from hexi.adapters.memory_file import FileMemory
+from hexi.adapters.model_openrouter_http import OpenRouterHTTPModel
+from hexi.adapters.workspace_local_git import LocalGitWorkspace
+from hexi.core.service import RunStepService
+
+ws = LocalGitWorkspace(Path.cwd())
+mem = FileMemory(ws.repo_root())
+mem.ensure_initialized()
+
+service = RunStepService(
+    model=OpenRouterHTTPModel(),
+    workspace=ws,
+    executor=LocalExec(),
+    events=ConsoleEventSink(),
+    memory=mem,
+)
+result = service.run_once("Create a tiny test improvement")
+print(result.success)`,
+  },
+  {
+    title: 'Policy Loop',
+    source: 'examples/policy_loop/run_loop.py',
+    code: `import subprocess
+
+TASKS = [
+    "Inspect repo and propose one safe test improvement",
+    "Apply the smallest code change required",
+    "Run allowlisted tests and report failures",
+]
+
+def run_step(task: str) -> int:
+    return subprocess.run(["hexi", "run", task], check=False).returncode`,
+  },
+  {
+    title: 'Todo Refiner',
+    source: 'examples/todo_refiner/run.py',
+    code: `import subprocess
+import sys
+
+def main() -> int:
+    task = " ".join(sys.argv[1:]).strip() or "Refine TODO comments in this repository"
+    cmd = ["hexi", "run", task]
+    return subprocess.run(cmd, check=False).returncode`,
+  },
+].map((example) => ({
+  ...example,
+  html: Prism.highlight(example.code, Prism.languages.python, 'python'),
+}))
+
+const faqPlaceholders = [
+  {
+    q: 'What is Hexi, and how is it different from other coding-agent tools?',
+    a: 'Hexi is a lightweight, contract-driven coding-agent runtime designed for local repositories, with a strong focus on controllability and refactor-safe architecture. The main difference is that Hexi treats model output as structured actions, not chat prose, then executes those actions under explicit policy constraints. Instead of running an opaque autonomous loop, Hexi executes one bounded step per run, logs structured events, and exits, which makes behavior easier to inspect, debug, and trust. It is intentionally modular: orchestration lives in core ports and services, while side effects are pushed into adapters. That means model providers, execution behavior, storage, and event presentation can be swapped without rewriting the core. Hexi also emphasizes practical DX through onboarding, doctor checks, templates, and demo flows, while keeping complexity low enough for maintainers to reason about quickly. It’s not trying to be a giant platform; it’s trying to be a reliable base layer.',
+  },
+  {
+    q: 'Is Hexi safe to run in my repository, and what guardrails are already in place?',
+    a: 'Hexi includes several default guardrails intended to reduce accidental damage while still being useful for real coding tasks. File operations are restricted to repository scope, so writes cannot traverse out of the project root. Command execution is policy-controlled through an allowlist in `.hexi/config.toml`, and additional disallowed command bases help block obviously risky operations. The runtime is single-step by default, which intentionally limits blast radius and encourages review between actions. Every run emits structured events and appends to `.hexi/runlog.jsonl`, giving you a clear trace of what happened. Configuration layering also helps: shared defaults in `config.toml`, local overrides in `local.toml`, and environment-first key resolution. This does not make Hexi “automatically safe” in all contexts, but it creates a practical baseline where behavior is explicit, inspectable, and bounded. Teams can further tighten policies per repo as they move from experimentation to production workflows.',
+  },
+  {
+    q: 'Which model providers are supported, and do I need OpenRouter to use Hexi?',
+    a: 'Hexi supports multiple provider paths so you can choose the integration style that matches your stack. Out of the box, it supports OpenAI-compatible and Anthropic-compatible adapters, plus optional OpenRouter adapters (raw HTTP and official SDK). OpenRouter is not required: you can run Hexi entirely with an OpenAI-compatible or Anthropic-compatible endpoint if you prefer. If you do want OpenRouter, it is packaged as optional extras so base installs stay cleaner and smaller. Provider selection happens in `.hexi/config.toml`, with provider-specific settings in `[providers.*]` blocks, while keys are resolved from environment variables first and optional local secrets second. The CLI `hexi doctor` command reports active provider, model, config paths, key source, and can optionally probe model connectivity. That gives you a deterministic way to confirm setup before executing coding tasks, especially when switching providers or testing in fresh environments.',
+  },
+  {
+    q: 'Why does Hexi use a single-step execution model instead of a continuous autonomous loop?',
+    a: 'Hexi’s single-step model is a deliberate product choice, not a missing implementation. In early-stage agent systems, most reliability failures come from compounding uncertainty across long autonomous loops. By forcing one bounded step per invocation, Hexi improves observability, user control, and debuggability: you can review outputs, diffs, and events after each step, then decide whether to continue. This structure also makes testing and policy enforcement cleaner, because each run has a clear start, constrained action set, and deterministic end state. From an architecture perspective, single-step keeps the core small and stable while adapter capabilities evolve independently. It also aligns with practical engineering workflows where humans still own intent and risk decisions. Hexi can support iterative behavior by repeated invocations or higher-level wrappers, but the base runtime remains intentionally simple. That simplicity is a strategic advantage for trust, maintainability, and incremental hardening over time.',
+  },
+  {
+    q: 'Should I start with `hexi new` or `hexi demo`, and when should I use each?',
+    a: 'Use `hexi new` when you want predictable scaffolding with minimal ceremony; use `hexi demo` when you want a creative, model-guided experience that can generate and apply idea-driven customization. `hexi new` is deterministic by default and optimized for reliable project bootstrap from built-in templates, with optional flags for naming, destination path, and git initialization. It is ideal for repeatable team workflows and automation scripts. `hexi demo` is intentionally “showcase mode”: it offers random, custom, or model-generated ideas, highlights quality disclaimers, and can run a post-scaffold customization step to shape the project according to the selected prompt. If your goal is stable infrastructure and quick start, begin with `new`; if your goal is discovery and inspiration, use `demo`. Many teams use both: `new` for serious repo creation, then `demo` in a scratch directory to explore patterns before standardizing them into templates and policies.',
+  },
+]
+
+const escapeHtml = (value: string) =>
+  value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+
+const formatFaqAnswer = (value: string) =>
+  escapeHtml(value).replace(
+    /`([^`]+)`/g,
+    '<code class="px-1 py-0.5 rounded bg-background/70 border border-border/60 text-[0.92em]">$1</code>',
+  )
+---
+
+<BaseLayout>
+  <div class="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
+    <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none opacity-70"></canvas>
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+      <div class="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-[120px] animate-pulse-slow bg-[radial-gradient(circle,_rgba(206,184,184,0.10)_0%,_transparent_70%)] dark:bg-[radial-gradient(circle,_rgba(206,184,184,0.10)_0%,_transparent_70%)]" />
+      <div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-[100px] animate-pulse-slow bg-[radial-gradient(circle,_rgba(234,214,184,0.08)_0%,_transparent_70%)]" style="animation-delay: 2s;" />
+      <div class="absolute top-1/2 left-0 w-[400px] h-[400px] rounded-full blur-[100px] animate-pulse-slow bg-[radial-gradient(circle,_rgba(227,224,192,0.06)_0%,_transparent_70%)]" style="animation-delay: 1s;" />
+
+      <div class="absolute inset-0 opacity-[0.015]" style="background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23ceb8b8' fill-opacity='1'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" />
+    </div>
+
+    <header class="relative z-10 w-full border-b border-border/60">
+      <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="relative w-9 h-9 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-9 h-9 text-primary"><path d="m12 2.4 8 4.6v10L12 21.6 4 17V7l8-4.6Z"/></svg>
+            <span class="absolute inset-0 flex items-center justify-center text-xs font-bold text-primary">H</span>
+          </div>
+          <span class="text-lg font-semibold tracking-tight font-mono">hexi.codes</span>
+        </div>
+        <nav class="flex items-center gap-3">
+          <a href="https://hexi.readthedocs.org" target="_blank" rel="noopener noreferrer" class="inline-flex h-9 items-center justify-center rounded-md px-3 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">Docs</a>
+          <a href="https://github.com/hexi-codes/hexi" target="_blank" rel="noopener noreferrer" class="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border/60 px-3 text-sm font-mono hover:border-primary/40 transition-colors">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.93c.57.1.78-.25.78-.55v-2.15c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.02 1.75 2.67 1.24 3.32.95.1-.74.4-1.24.72-1.52-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.26 1.17-3.06-.12-.29-.5-1.45.11-3.02 0 0 .96-.31 3.15 1.17a10.9 10.9 0 0 1 5.74 0c2.19-1.48 3.15-1.17 3.15-1.17.61 1.57.23 2.73.11 3.02.73.8 1.17 1.81 1.17 3.06 0 4.42-2.7 5.39-5.27 5.67.41.36.77 1.08.77 2.18v3.22c0 .3.2.66.79.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+            GitHub
+          </a>
+          <button id="theme-toggle" class="inline-flex h-9 w-9 items-center justify-center rounded-md p-0 hover:bg-secondary/50 transition-colors" aria-label="Toggle theme">
+            <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 text-primary hidden"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 text-primary hidden"><path d="M21 14.5A9 9 0 1 1 9.5 3 7 7 0 0 0 21 14.5Z"/></svg>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="relative z-10 flex-1">
+      <section class="container mx-auto px-4 py-14 md:py-20 relative">
+        <div class="max-w-4xl mx-auto text-center">
+          <span class="mb-6 inline-flex items-center rounded-full border border-primary/30 bg-primary/5 px-4 py-1.5 font-mono text-xs text-primary">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3 mr-1.5"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
+            v0.1.0 Available
+          </span>
+
+          <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
+            A <span class="text-gradient">Hexagonal</span> Runtime Framework for Building Coding Agents
+          </h1>
+
+          <p class="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed">
+            <span class="text-primary font-medium">Contracts-first</span> ports and adapters for building
+            <span class="text-primary font-medium"> provider-agnostic</span>, composable
+            <span class="text-primary font-medium"> agent runtimes</span> with a pythonic interface.
+          </p>
+
+          <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a href="https://github.com/hexi-codes/hexi" target="_blank" rel="noopener noreferrer" class="inline-flex h-11 items-center justify-center rounded-md px-8 font-medium shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-colors">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 mr-2"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.93c.57.1.78-.25.78-.55v-2.15c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.02 1.75 2.67 1.24 3.32.95.1-.74.4-1.24.72-1.52-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.26 1.17-3.06-.12-.29-.5-1.45.11-3.02 0 0 .96-.31 3.15 1.17a10.9 10.9 0 0 1 5.74 0c2.19-1.48 3.15-1.17 3.15-1.17.61 1.57.23 2.73.11 3.02.73.8 1.17 1.81 1.17 3.06 0 4.42-2.7 5.39-5.27 5.67.41.36.77 1.08.77 2.18v3.22c0 .3.2.66.79.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+              View on GitHub
+            </a>
+            <a href="https://hexi.readthedocs.org" target="_blank" rel="noopener noreferrer" class="inline-flex h-11 items-center justify-center rounded-md border border-border/60 px-8 font-mono text-sm hover:border-primary/40 transition-colors">
+              Read the Docs
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="container mx-auto px-4 py-5 md:py-7">
+        <p class="text-center font-semibold tracking-tight text-[1.7rem] md:text-[2.25rem]">
+          <span class="text-primary">Build your own</span>
+          <span id="typewriter-text" class="ml-2 text-foreground/90"></span>
+          <span id="typewriter-dot" class="text-black hidden">.</span>
+          <span id="typewriter-caret" class="inline-block ml-0.5 text-primary animate-pulse">|</span>
+        </p>
+      </section>
+
+      <section class="container mx-auto px-4 py-8 md:py-10">
+        <div class="max-w-4xl mx-auto rounded-2xl border border-border/60 bg-card/55 backdrop-blur-sm p-6 md:p-8">
+          <p class="font-mono text-xs uppercase tracking-[0.2em] text-primary mb-3">Installation</p>
+          <h2 class="text-2xl md:text-3xl font-semibold mb-4">Get Started In Seconds</h2>
+          <p class="text-muted-foreground mb-5">Install Hexi from PyPI:</p>
+          <pre class="code-block"><code class="text-2xl md:text-3xl font-bold">pip install hexicodes</code></pre>
+        </div>
+      </section>
+
+      <section class="container mx-auto px-4 py-10 md:py-14">
+        <div class="max-w-6xl mx-auto">
+          <div class="hex-border rounded-xl border border-border/50 bg-card/70 backdrop-blur-sm p-6 md:p-8">
+            <div class="text-center pb-2">
+              <h2 class="text-2xl font-semibold flex items-center justify-center gap-2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5 text-primary"><path d="m12 2.4 8 4.6v10L12 21.6 4 17V7l8-4.6Z"/></svg>
+                What is Hexi?
+              </h2>
+            </div>
+            <p class="mt-4 md:px-2 max-w-5xl mx-auto text-muted-foreground text-[1.02rem] leading-7 md:leading-8 [text-wrap:pretty]">
+              Hexi is an <span class="font-medium text-[#7c6161] dark:text-primary">open-source</span> <span class="font-medium text-[#746048] dark:text-accent">hexagonal runtime framework</span> for building coding agents with <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">explicit boundaries</span> and <span class="font-medium text-[#7c6161] dark:text-primary">replaceable components</span>. Instead of bundling provider logic, tools, storage, and UI into a single opaque system, Hexi defines <span class="font-medium text-[#746048] dark:text-accent">stable contracts</span> between them. The <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">core runtime stays minimal</span>; adapters handle integration. You can <span class="font-medium text-[#7c6161] dark:text-primary">change providers</span>, <span class="font-medium text-[#746048] dark:text-accent">swap toolchains</span>, or replace storage without rewriting your architecture. v0.1.0 is CLI-first and intentionally small. The long-term direction includes an <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">event-driven inbox workflow</span> for managing threads and tasks, with planned <span class="font-medium text-[#7c6161] dark:text-primary">MCP-native remote steering</span>. Hexi prioritizes clear seams, <span class="font-medium text-[#746048] dark:text-accent">reproducibility</span>, and <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">architectural control</span>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="container mx-auto px-4 py-10 md:py-14">
+        <div class="max-w-6xl mx-auto">
+          <div class="text-center mb-12">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">Core Features</h2>
+            <p class="text-muted-foreground text-lg max-w-2xl mx-auto">Built with clean architecture principles for maximum flexibility and control.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map((feature) => (
+              <div class={`group relative overflow-hidden transition-all duration-300 rounded-xl border border-border/50 bg-card/50 hover:bg-card/80 hover:border-primary/30 p-6 ${feature.planned ? 'opacity-85' : ''}`}>
+                <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div class="relative flex items-start justify-between">
+                  <div class="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/15 transition-colors">
+                    <span class="w-5 h-5 text-primary" set:html={iconSvgs[feature.icon]} />
+                  </div>
+                  {feature.planned && <span class="inline-flex items-center rounded-full border border-accent/40 bg-accent/5 px-2 py-1 font-mono text-xs text-accent">Planned</span>}
+                </div>
+                <h3 class="relative text-lg font-semibold mb-2">{feature.title}</h3>
+                <p class="relative text-muted-foreground leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section class="container mx-auto px-4 py-10 md:py-14">
+        <div class="max-w-6xl mx-auto">
+          <div class="mb-8 md:mb-10 flex items-center justify-between gap-4">
+            <div>
+              <p class="font-mono text-xs uppercase tracking-[0.22em] text-primary mb-2">Real Project Snippets</p>
+              <h2 class="text-3xl md:text-4xl font-bold">Python Examples From Hexi</h2>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="code-prev" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border/60 hover:border-primary/40 hover:bg-secondary/60 transition-colors" aria-label="Previous example">←</button>
+              <button id="code-next" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border/60 hover:border-primary/40 hover:bg-secondary/60 transition-colors" aria-label="Next example">→</button>
+            </div>
+          </div>
+
+          <div id="code-carousel" class="relative overflow-hidden rounded-2xl border border-border/60 bg-card/45 backdrop-blur-sm">
+            <div id="code-carousel-track" class="flex transition-transform duration-500 ease-out">
+              {codeExamples.map((example, index) => (
+                <article class="w-full shrink-0 p-6 md:p-8">
+                  <div class="flex items-center justify-between mb-4 gap-3">
+                    <h3 class="text-xl font-semibold">{example.title}</h3>
+                    <span class="font-mono text-xs text-muted-foreground">{example.source}</span>
+                  </div>
+                  <pre class="code-block"><code class="language-python" set:html={example.html} /></pre>
+                  <p class="mt-4 font-mono text-xs text-muted-foreground">Example {index + 1} of {codeExamples.length}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div id="code-dots" class="mt-5 flex items-center justify-center gap-2">
+            {codeExamples.map((_, index) => (
+              <button
+                class={`h-2.5 w-7 rounded-full transition-colors ${index === 0 ? 'bg-primary' : 'bg-border'}`}
+                data-dot-index={index}
+                aria-label={`Go to example ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section class="container mx-auto px-4 py-10 md:py-14">
+        <div class="max-w-6xl mx-auto">
+          <div class="rounded-2xl border border-border/60 bg-card/55 backdrop-blur-sm p-6 md:p-8 min-h-[420px]">
+            <p class="font-mono text-xs uppercase tracking-[0.2em] text-primary mb-3">CLI Snapshot</p>
+            <div class="rounded-xl border border-border/70 bg-[#1c1a18] text-[#e7e3d1] overflow-x-auto">
+              <pre class="text-[12.5px] leading-6 p-5 md:p-6 whitespace-pre tracking-normal [font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation_Mono','Courier_New',monospace] [font-variant-ligatures:none] [font-feature-settings:'liga'_0,'calt'_0]">
+hexi help
+
+Usage:  [OPTIONS] COMMAND [ARGS]...
+
+Hexi CLI (v0.1.0): single-step coding-agent runtime.
+
++- Options ---------------------------------------------------------------------------------------------------------------+
+| --version                     Show Hexi version and exit.                                                               |
+| --install-completion          Install completion for the current shell.                                                 |
+| --show-completion             Show completion for the current shell, to copy it or customize the installation.          |
+| --help                        Show this message and exit.                                                               |
++-------------------------------------------------------------------------------------------------------------------------+
++- Commands --------------------------------------------------------------------------------------------------------------+
+| help         Show command help.                                                                                         |
+| version      Print Hexi version.                                                                                        |
+| plan-check   Validate and troubleshoot an ActionPlan JSON payload.                                                      |
+| init         Initialize .hexi config/runlog files in this folder (or git root when available).                          |
+| onboard      Interactive setup for provider/model and optional local API key storage.                                   |
+| new          Scaffold a project from a built-in Hexi template (non-interactive by default).                             |
+| demo         Fancy interactive demo: generate or pick project ideas, then scaffold a template.                          |
+| run          Execute one Hexi agent step for a task and emit structured events.                                         |
+| diff         Print git diff for the current repository.                                                                 |
+| doctor       Run environment, config, and credential diagnostics (optionally with live model probe).                    |
++-------------------------------------------------------------------------------------------------------------------------+
+              </pre>
+            </div>
+          </div>
+
+          <div class="mt-8 rounded-2xl border border-border/60 bg-card/55 backdrop-blur-sm p-6 md:p-8">
+            <h3 class="text-2xl md:text-3xl font-semibold mb-5">Frequently Asked Questions</h3>
+            <div class="space-y-3">
+              {faqPlaceholders.map((item) => (
+                <details class="group rounded-xl border border-border/70 bg-background/40 px-4 py-3">
+                  <summary class="cursor-pointer list-none font-medium flex items-center justify-between gap-4">
+                    <span>{item.q}</span>
+                    <span class="text-primary transition-transform group-open:rotate-45">+</span>
+                  </summary>
+                  <p class="mt-3 text-sm leading-6 text-muted-foreground" set:html={formatFaqAnswer(item.a)} />
+                </details>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="relative z-10 border-t border-border/50 mt-auto">
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-2">
+            <div class="relative w-6 h-6 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-6 h-6 text-primary"><path d="m12 2.4 8 4.6v10L12 21.6 4 17V7l8-4.6Z"/></svg>
+              <span class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-primary">H</span>
+            </div>
+            <span class="text-sm font-mono text-muted-foreground">hexi.codes</span>
+          </div>
+          <p class="text-sm font-mono text-muted-foreground"><a href="https://github.com/hexi-codes/hexi" target="_blank" rel="noopener noreferrer" class="hover:text-foreground transition-colors">Open source</a> • MIT License</p>
+          <p class="text-sm font-mono text-muted-foreground">Made with ❤️ in 🇵🇪 Perú.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script is:inline>
+    const toggle = document.getElementById('theme-toggle')
+    const sun = document.getElementById('icon-sun')
+    const moon = document.getElementById('icon-moon')
+    const bgCanvas = document.getElementById('bg-canvas')
+    const bgCtx = bgCanvas?.getContext('2d')
+    const codeTrack = document.getElementById('code-carousel-track')
+    const codeCarousel = document.getElementById('code-carousel')
+    const codePrev = document.getElementById('code-prev')
+    const codeNext = document.getElementById('code-next')
+    const codeDots = Array.from(document.querySelectorAll('[data-dot-index]'))
+    const typewriterText = document.getElementById('typewriter-text')
+    const typewriterDot = document.getElementById('typewriter-dot')
+
+    let codeIndex = 0
+    let autoTimer = null
+    const typePhrases = [
+      'CLI coding agent',
+      'multi-provider, multi-model conversational desktop studio',
+      'autonomous code review copilot',
+      'terminal-native refactoring agent',
+      'MCP-ready coder agent orchestration control plane',
+      'policy-driven coding workflow engine',
+      'repo-aware debugging assistant',
+      'event-driven engineering inbox agent',
+      'adapter-based AI tooling runtime',
+      'reproducible code generation pipeline',
+      'provider-agnostic pair-programming agent',
+      'local-first software automation studio',
+    ]
+    let typePhraseIndex = 0
+    let typeCharIndex = 0
+    let typeDeleting = false
+    let typeTimer = null
+
+    const updateThemeIcons = () => {
+      const dark = document.documentElement.classList.contains('dark')
+      sun?.classList.toggle('hidden', !dark)
+      moon?.classList.toggle('hidden', dark)
+    }
+
+    const resizeCanvas = () => {
+      if (!bgCanvas || !bgCtx) return
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      bgCanvas.width = Math.floor(window.innerWidth * dpr)
+      bgCanvas.height = Math.floor(window.innerHeight * dpr)
+      bgCanvas.style.width = `${window.innerWidth}px`
+      bgCanvas.style.height = `${window.innerHeight}px`
+      bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const pointer = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5 }
+    let rafId = null
+    let lastTime = 0
+
+    const blobs = [
+      { x: 0.16, y: 0.2, r: 330, vx: 0.00009, vy: 0.00006, light: [206, 184, 184], dark: [234, 214, 184] },
+      { x: 0.8, y: 0.68, r: 280, vx: -0.00007, vy: 0.00009, light: [234, 214, 184], dark: [206, 184, 184] },
+      { x: 0.44, y: 0.52, r: 360, vx: 0.00005, vy: -0.00008, light: [227, 224, 192], dark: [227, 224, 192] },
+      { x: 0.63, y: 0.28, r: 240, vx: -0.00008, vy: -0.00004, light: [191, 189, 175], dark: [206, 206, 206] },
+    ]
+
+    const ribbons = [
+      { y: 0.2, speed: 0.00008, width: 220, phase: 0.1 },
+      { y: 0.52, speed: -0.00006, width: 260, phase: 1.7 },
+      { y: 0.8, speed: 0.00007, width: 200, phase: 2.4 },
+    ]
+
+    const particles = Array.from({ length: 18 }, (_, i) => ({
+      p: i / 18,
+      seed: i * 1.63 + 0.7,
+      r: 1 + (i % 3),
+    }))
+
+    const drawRibbon = (ctx, w, h, t, ribbon, dark) => {
+      const centerY = h * ribbon.y + Math.sin(t * 0.0006 + ribbon.phase) * 32
+      const drift = (t * ribbon.speed * w) % w
+      const grad = ctx.createLinearGradient(0, centerY - ribbon.width / 2, w, centerY + ribbon.width / 2)
+      grad.addColorStop(0, `rgba(${dark ? '206,184,184' : '234,214,184'}, 0)`)
+      grad.addColorStop(0.5, `rgba(${dark ? '234,214,184' : '206,184,184'}, ${dark ? 0.09 : 0.12})`)
+      grad.addColorStop(1, `rgba(${dark ? '227,224,192' : '191,189,175'}, 0)`)
+      ctx.save()
+      ctx.translate(drift - w * 0.2, 0)
+      ctx.fillStyle = grad
+      ctx.fillRect(-w, centerY - ribbon.width / 2, w * 2.6, ribbon.width)
+      ctx.restore()
+    }
+
+    const drawParticles = (ctx, w, h, t, dark) => {
+      particles.forEach((pt) => {
+        const x = ((pt.p + t * 0.00001 + Math.sin(pt.seed + t * 0.0003) * 0.01) % 1) * w
+        const y = ((0.15 + (pt.seed * 0.137) % 0.7) + Math.cos(pt.seed + t * 0.00022) * 0.02) * h
+        const a = (Math.sin(t * 0.002 + pt.seed * 3) + 1) * 0.5
+        ctx.fillStyle = `rgba(${dark ? '234,214,184' : '168,148,148'}, ${0.12 + a * 0.2})`
+        ctx.beginPath()
+        ctx.arc(x, y, pt.r, 0, Math.PI * 2)
+        ctx.fill()
+      })
+    }
+
+    const animateBackground = (time) => {
+      if (!bgCtx || !bgCanvas) return
+      if (prefersReducedMotion && time - lastTime < 250) {
+        rafId = requestAnimationFrame(animateBackground)
+        return
+      }
+      lastTime = time
+      const dark = document.documentElement.classList.contains('dark')
+      const w = window.innerWidth
+      const h = window.innerHeight
+      bgCtx.clearRect(0, 0, w, h)
+      bgCtx.globalCompositeOperation = 'source-over'
+      bgCtx.filter = 'blur(0px)'
+
+      pointer.x += (pointer.tx - pointer.x) * 0.04
+      pointer.y += (pointer.ty - pointer.y) * 0.04
+
+      const base = bgCtx.createLinearGradient(0, 0, w, h)
+      base.addColorStop(0, dark ? 'rgba(32,29,26,0.45)' : 'rgba(255,255,251,0.56)')
+      base.addColorStop(1, dark ? 'rgba(26,23,20,0.3)' : 'rgba(250,247,239,0.38)')
+      bgCtx.fillStyle = base
+      bgCtx.fillRect(0, 0, w, h)
+
+      bgCtx.globalCompositeOperation = 'screen'
+      blobs.forEach((blob) => {
+        blob.x = (blob.x + blob.vx + 1) % 1
+        blob.y = (blob.y + blob.vy + 1) % 1
+        const [r, g, b] = dark ? blob.dark : blob.light
+        const parallaxX = (pointer.x - 0.5) * 42
+        const parallaxY = (pointer.y - 0.5) * 34
+        const gx = blob.x * w + parallaxX
+        const gy = blob.y * h + parallaxY
+        const grad = bgCtx.createRadialGradient(gx, gy, 0, gx, gy, blob.r)
+        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${dark ? 0.18 : 0.22})`)
+        grad.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, ${dark ? 0.08 : 0.12})`)
+        grad.addColorStop(1, 'rgba(0,0,0,0)')
+        bgCtx.fillStyle = grad
+        bgCtx.beginPath()
+        bgCtx.arc(gx, gy, blob.r, 0, Math.PI * 2)
+        bgCtx.fill()
+      })
+
+      bgCtx.filter = 'blur(18px)'
+      ribbons.forEach((ribbon) => drawRibbon(bgCtx, w, h, time, ribbon, dark))
+      bgCtx.filter = 'blur(0px)'
+      drawParticles(bgCtx, w, h, time, dark)
+
+      rafId = requestAnimationFrame(animateBackground)
+    }
+
+    const updateCarousel = () => {
+      if (!codeTrack) return
+      codeTrack.style.transform = `translateX(-${codeIndex * 100}%)`
+      codeDots.forEach((dot, index) => {
+        dot.classList.toggle('bg-primary', index === codeIndex)
+        dot.classList.toggle('bg-border', index !== codeIndex)
+      })
+    }
+
+    const moveCarousel = (nextIndex) => {
+      const total = codeDots.length
+      if (total === 0) return
+      codeIndex = (nextIndex + total) % total
+      updateCarousel()
+    }
+
+    const stopAutoCarousel = () => {
+      if (!autoTimer) return
+      clearInterval(autoTimer)
+      autoTimer = null
+    }
+
+    const startAutoCarousel = () => {
+      stopAutoCarousel()
+      if (codeDots.length <= 1) return
+      autoTimer = setInterval(() => {
+        moveCarousel(codeIndex + 1)
+      }, 5000)
+    }
+
+    const runTypewriter = () => {
+      if (!typewriterText) return
+      const phrase = typePhrases[typePhraseIndex]
+      const maxChars = phrase.length + 1 // +1 for trailing dot
+
+      const renderTypewriter = () => {
+        const phraseChars = Math.min(typeCharIndex, phrase.length)
+        typewriterText.textContent = ` ${phrase.slice(0, phraseChars)}`
+        typewriterDot?.classList.toggle('hidden', typeCharIndex <= phrase.length)
+      }
+
+      if (!typeDeleting) {
+        typeCharIndex += 1
+        renderTypewriter()
+        if (typeCharIndex >= maxChars) {
+          typeDeleting = true
+          typeTimer = window.setTimeout(runTypewriter, 1400)
+          return
+        }
+      } else {
+        typeCharIndex -= 1
+        renderTypewriter()
+        if (typeCharIndex <= 0) {
+          typeDeleting = false
+          typePhraseIndex = (typePhraseIndex + 1) % typePhrases.length
+        }
+      }
+      typeTimer = window.setTimeout(runTypewriter, typeDeleting ? 34 : 58)
+    }
+
+    updateThemeIcons()
+    updateCarousel()
+    resizeCanvas()
+    rafId = requestAnimationFrame(animateBackground)
+
+    toggle?.addEventListener('click', () => {
+      const root = document.documentElement
+      const dark = root.classList.toggle('dark')
+      localStorage.setItem('hexi-theme', dark ? 'dark' : 'light')
+      updateThemeIcons()
+    })
+
+    window.addEventListener('resize', resizeCanvas)
+    window.addEventListener('mousemove', (event) => {
+      pointer.tx = event.clientX / window.innerWidth
+      pointer.ty = event.clientY / window.innerHeight
+    })
+    window.addEventListener('beforeunload', () => {
+      if (rafId) cancelAnimationFrame(rafId)
+    })
+
+    codePrev?.addEventListener('click', () => moveCarousel(codeIndex - 1))
+    codeNext?.addEventListener('click', () => moveCarousel(codeIndex + 1))
+    codeDots.forEach((dot, index) => {
+      dot.addEventListener('click', () => moveCarousel(index))
+    })
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft') moveCarousel(codeIndex - 1)
+      if (event.key === 'ArrowRight') moveCarousel(codeIndex + 1)
+    })
+
+    codeCarousel?.addEventListener('mouseenter', stopAutoCarousel)
+    codeCarousel?.addEventListener('mouseleave', startAutoCarousel)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopAutoCarousel()
+      else startAutoCarousel()
+    })
+
+    startAutoCarousel()
+    runTypewriter()
+  </script>
+</BaseLayout>
