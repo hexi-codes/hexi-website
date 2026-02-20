@@ -70,3 +70,6 @@ prompt
 
 # Skills directory
 skills/
+
+# Local-only release helper
+scripts/release.sh
