@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro'
 import Prism from 'prismjs'
 import 'prismjs/components/prism-python'
+import versionMeta from '../generated/version.json'
 
 const features = [
   {
@@ -139,6 +140,8 @@ const formatFaqAnswer = (value: string) =>
     /`([^`]+)`/g,
     '<code class="px-1 py-0.5 rounded bg-background/70 border border-border/60 text-[0.92em]">$1</code>',
   )
+
+const latestVersion = versionMeta.version
 ---
 
 <BaseLayout>
@@ -180,7 +183,7 @@ const formatFaqAnswer = (value: string) =>
         <div class="max-w-4xl mx-auto text-center">
           <span class="mb-6 inline-flex items-center rounded-full border border-primary/30 bg-primary/5 px-4 py-1.5 font-mono text-xs text-primary">
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3 mr-1.5"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
-            v0.1.0 Available
+            v{latestVersion} Available
           </span>
 
           <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
@@ -233,7 +236,7 @@ const formatFaqAnswer = (value: string) =>
               </h2>
             </div>
             <p class="mt-4 md:px-2 max-w-5xl mx-auto text-muted-foreground text-[1.02rem] leading-7 md:leading-8 [text-wrap:pretty]">
-              Hexi is an <span class="font-medium text-[#7c6161] dark:text-primary">open-source</span> <span class="font-medium text-[#746048] dark:text-accent">hexagonal runtime framework</span> for building coding agents with <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">explicit boundaries</span> and <span class="font-medium text-[#7c6161] dark:text-primary">replaceable components</span>. Instead of bundling provider logic, tools, storage, and UI into a single opaque system, Hexi defines <span class="font-medium text-[#746048] dark:text-accent">stable contracts</span> between them. The <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">core runtime stays minimal</span>; adapters handle integration. You can <span class="font-medium text-[#7c6161] dark:text-primary">change providers</span>, <span class="font-medium text-[#746048] dark:text-accent">swap toolchains</span>, or replace storage without rewriting your architecture. v0.1.0 is CLI-first and intentionally small. The long-term direction includes an <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">event-driven inbox workflow</span> for managing threads and tasks, with planned <span class="font-medium text-[#7c6161] dark:text-primary">MCP-native remote steering</span>. Hexi prioritizes clear seams, <span class="font-medium text-[#746048] dark:text-accent">reproducibility</span>, and <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">architectural control</span>.
+              Hexi is an <span class="font-medium text-[#7c6161] dark:text-primary">open-source</span> <span class="font-medium text-[#746048] dark:text-accent">hexagonal runtime framework</span> for building coding agents with <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">explicit boundaries</span> and <span class="font-medium text-[#7c6161] dark:text-primary">replaceable components</span>. Instead of bundling provider logic, tools, storage, and UI into a single opaque system, Hexi defines <span class="font-medium text-[#746048] dark:text-accent">stable contracts</span> between them. The <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">core runtime stays minimal</span>; adapters handle integration. You can <span class="font-medium text-[#7c6161] dark:text-primary">change providers</span>, <span class="font-medium text-[#746048] dark:text-accent">swap toolchains</span>, or replace storage without rewriting your architecture. v{latestVersion} is CLI-first and intentionally small. The long-term direction includes an <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">event-driven inbox workflow</span> for managing threads and tasks, with planned <span class="font-medium text-[#7c6161] dark:text-primary">MCP-native remote steering</span>. Hexi prioritizes clear seams, <span class="font-medium text-[#746048] dark:text-accent">reproducibility</span>, and <span class="font-medium text-[#676258] dark:text-[color:var(--hexi-secondary)]">architectural control</span>.
             </p>
           </div>
         </div>
@@ -314,7 +317,7 @@ hexi help
 
 Usage:  [OPTIONS] COMMAND [ARGS]...
 
-Hexi CLI (v0.1.0): single-step coding-agent runtime.
+Hexi CLI (v{latestVersion}): single-step coding-agent runtime.
 
 +- Options ---------------------------------------------------------------------------------------------------------------+
 | --version                     Show Hexi version and exit.                                                               |

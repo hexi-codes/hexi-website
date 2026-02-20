@@ -5,6 +5,10 @@ node_modules/
 dist/
 .astro/
 build/
+.output/
+# Note: `src/generated/version.json` is intentionally committed.
+# It is build-time metadata consumed by Astro and provides a safe fallback
+# if the sync step cannot reach PyPI.
 
 # Coverage and test artifacts
 coverage/
@@ -34,6 +38,13 @@ yarn-error.log*
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+.npm/
+.cache/
+.eslintcache
+.stylelintcache
+.parcel-cache/
+.sass-cache/
+.turbo/
 
 # Local editor / OS noise
 .DS_Store
@@ -54,6 +65,8 @@ prompt
 
 # Optional deployment/platform dirs
 .vercel
+.netlify
+.wrangler
 
 # Skills directory
 skills/

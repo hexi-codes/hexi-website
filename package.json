@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "astro dev --host --port 3000 2>&1 | tee dev.log",
     "website": "ASTRO_TELEMETRY_DISABLED=1 astro dev --host --port 3000",
+    "sync:version": "bun ./scripts/sync-version.mjs",
+    "prebuild": "bun run sync:version",
     "build": "astro build",
+    "release:website": "ASTRO_TELEMETRY_DISABLED=1 bun run build",
     "start": "astro preview --host --port 3000 2>&1 | tee server.log",
     "lint": "eslint ."
   },
